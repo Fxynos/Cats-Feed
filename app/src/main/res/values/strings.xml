@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Cats Feed</string>
+    <string name="card_menu_save">Save to gallery</string>
 </resources>
