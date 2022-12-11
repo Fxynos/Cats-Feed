@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.CallSuper;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
@@ -144,8 +145,9 @@ public class DemoActivity extends AppCompatActivity implements Adapter.OnClickLi
         switch (view.getId()) {
             case R.id.card:
                 if (adapter.getItems().get(position).getState() == Adapter.Item.LoadingState.SUCCESS){
-                    View shadow = ((Adapter.ViewHolder) list.getChildViewHolder(view)).getShadowMenu();
-                    shadow.setVisibility(shadow.getVisibility() == View.VISIBLE ? View.INVISIBLE : View.VISIBLE);
+                    Adapter.ViewHolder holder = (Adapter.ViewHolder) list.findViewHolderForAdapterPosition(position);
+                    if (holder != null && holder.isAnimationAvailable())
+                        holder.startAnimationAppear();
                 }
                 break;
             case R.id.save:

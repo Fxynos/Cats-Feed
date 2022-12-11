@@ -1,5 +1,8 @@
 package com.vl.catsapiimplementation;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -8,6 +11,8 @@ import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Interpolator;
+import android.view.animation.LinearInterpolator;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -25,6 +30,9 @@ import java.util.concurrent.CompletableFuture;
 
 public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
     final static private Handler mainThread = new Handler(Looper.getMainLooper());
+
+    final static private int ANIMATION_DURATION = 250;
+    final static private Interpolator ANIMATION_INTERPOLATOR = new LinearInterpolator();
 
     final private ArrayList<Item> items;
     private OnClickListener clickListener = null;
@@ -57,16 +65,18 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull Adapter.ViewHolder holder, int position) {
-        holder.shadow.setVisibility(View.INVISIBLE);
+        holder.interceptAnimation();
         holder.img.setImageBitmap(null);
         holder.shimmer.showShimmer(true);
         items.get(position).setOnLoadListener((bitmap) -> {
-            if (bitmap == null)
-                holder.img.setImageResource(R.drawable.ic_baseline_signal_wifi_off_24);
-            else
-                holder.img.setImageBitmap(bitmap);
-            holder.shimmer.stopShimmer();
-            holder.shimmer.hideShimmer();
+            if (holder.getAdapterPosition() == position) {
+                if (bitmap == null)
+                    holder.img.setImageResource(R.drawable.ic_baseline_signal_wifi_off_24);
+                else
+                    holder.img.setImageBitmap(bitmap);
+                holder.shimmer.stopShimmer();
+                holder.shimmer.hideShimmer();
+            }
         });
     }
 
@@ -80,6 +90,7 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
         final private ShimmerFrameLayout shimmer;
         final private ImageButton save;
         final private LinearLayout shadow;
+        final private ObjectAnimator animator;
 
         public ViewHolder(View view) {
             super(view);
@@ -89,16 +100,48 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
             shimmer = view.findViewById(R.id.shimmer);
             view.setOnClickListener(this); // R.id.card
             save.setOnClickListener(this);
-        }
-
-        public View getShadowMenu() {
-            return shadow;
+            animator = initAnimator();
         }
 
         @Override
         public void onClick(View view) {
             if (clickListener != null)
                 clickListener.onClick(view, getAdapterPosition());
+        }
+
+        public boolean isAnimationAvailable() {
+            return animator != null && !animator.isRunning() && shimmer != null && !shimmer.isShimmerVisible();
+        }
+
+        public void startAnimationAppear() {
+            if (shadow.getVisibility() == View.VISIBLE)
+                animator.setFloatValues(1, 0);
+            else {
+                animator.setFloatValues(0, 1);
+                shadow.setVisibility(View.VISIBLE);
+            }
+            animator.start();
+        }
+
+        private void interceptAnimation() {
+            animator.pause();
+            shadow.setVisibility(View.INVISIBLE);
+        }
+
+        private ObjectAnimator initAnimator() {
+            ObjectAnimator animator = new ObjectAnimator();
+            animator.setTarget(shadow);
+            animator.setDuration(ANIMATION_DURATION);
+            animator.setInterpolator(ANIMATION_INTERPOLATOR);
+            animator.setPropertyName("alpha");
+            animator.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+                    shadow.setVisibility(shadow.getAlpha() == 1 ? View.VISIBLE : View.INVISIBLE);
+                }
+            });
+            return animator;
         }
     }
 
