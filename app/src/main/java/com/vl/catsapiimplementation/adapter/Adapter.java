@@ -1,11 +1,10 @@
-package com.vl.catsapiimplementation;
+package com.vl.catsapiimplementation.adapter;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
@@ -17,14 +16,14 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.facebook.shimmer.ShimmerFrameLayout;
+import com.vl.catsapiimplementation.R;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 
@@ -34,44 +33,49 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
     final static private int ANIMATION_DURATION = 250;
     final static private Interpolator ANIMATION_INTERPOLATOR = new LinearInterpolator();
 
-    final private ArrayList<Item> items;
-    private OnClickListener clickListener = null;
-    final private Context context;
+    final private ArrayList<Adapter.Item> items;
+    private Adapter.OnClickListener clickListener = null;
     final private LayoutInflater inflater;
+    @DrawableRes
+    private Integer icon = null;
 
-    public Adapter(Context context, ArrayList<Item> items) {
+    public Adapter(Context context, ArrayList<Adapter.Item> items) {
         this.items = items;
-        this.context = context;
         inflater = LayoutInflater.from(context);
     }
 
-    public Adapter(Context context) {
-        this(context, new ArrayList<>());
-    }
-
-    public ArrayList<Item> getItems() {
+    public ArrayList<Adapter.Item> getItems() {
         return items;
     }
 
-    public void setOnClickListener(OnClickListener listener) {
+    public void setButtonIconResource(@DrawableRes int icon) {
+        this.icon = icon;
+    }
+
+    /**
+     * ImageButton click event is available only after icon is set
+     */
+    public void setOnClickListener(Adapter.OnClickListener listener) {
         this.clickListener = listener;
     }
 
     @NonNull
     @Override
     public Adapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return new ViewHolder(inflater.inflate(R.layout.item_layout, parent, false));
+        return new Adapter.ViewHolder(inflater.inflate(R.layout.item_layout, parent, false));
     }
 
     @Override
     public void onBindViewHolder(@NonNull Adapter.ViewHolder holder, int position) {
+        if (icon != null)
+            holder.button.setImageResource(icon);
         holder.interceptAnimation();
         holder.img.setImageBitmap(null);
         holder.shimmer.showShimmer(true);
         items.get(position).setOnLoadListener((bitmap) -> {
             if (holder.getAdapterPosition() == position) {
                 if (bitmap == null)
-                    holder.img.setImageResource(R.drawable.ic_baseline_signal_wifi_off_24);
+                    holder.img.setImageResource(R.drawable.ic_baseline_signal_wifi_off_24); // TODO
                 else
                     holder.img.setImageBitmap(bitmap);
                 holder.shimmer.stopShimmer();
@@ -85,35 +89,38 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
         return items.size();
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-        final private ImageView img;
-        final private ShimmerFrameLayout shimmer;
-        final private ImageButton save;
-        final private LinearLayout shadow;
-        final private ObjectAnimator animator;
+    protected final class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+        final ImageView img;
+        final ShimmerFrameLayout shimmer;
+        final ImageButton button;
+        final LinearLayout shadow;
+        final ObjectAnimator animator;
 
         public ViewHolder(View view) {
             super(view);
-            save = view.findViewById(R.id.save);
+            button = view.findViewById(R.id.save);
             shadow = view.findViewById(R.id.shadow);
             img = view.findViewById(R.id.image);
             shimmer = view.findViewById(R.id.shimmer);
-            view.setOnClickListener(this); // R.id.card
-            save.setOnClickListener(this);
+            view.setOnClickListener(this);
+            button.setOnClickListener(this);
             animator = initAnimator();
         }
 
         @Override
         public void onClick(View view) {
-            if (clickListener != null)
+            if (view.getId() == R.id.card) {
+                if (isAnimationAvailable() && icon != null)
+                    startAnimationAppear();
+            } else if (clickListener != null)
                 clickListener.onClick(view, getAdapterPosition());
         }
 
-        public boolean isAnimationAvailable() {
+        private boolean isAnimationAvailable() {
             return animator != null && !animator.isRunning() && shimmer != null && !shimmer.isShimmerVisible();
         }
 
-        public void startAnimationAppear() {
+        private void startAnimationAppear() {
             if (shadow.getVisibility() == View.VISIBLE)
                 animator.setFloatValues(1, 0);
             else {
@@ -149,7 +156,7 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
         void onClick(View view, int position);
     }
 
-    public static class Item {
+    public static abstract class Item {
         public enum LoadingState {
             LOADING,
             SUCCESS,
@@ -157,17 +164,10 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
         }
 
         private Bitmap bitmap = null;
-        private OnLoadListener listener = null;
-        private LoadingState state = LoadingState.LOADING;
-        private final String url, id;
+        private Adapter.Item.OnLoadListener listener = null;
+        private Adapter.Item.LoadingState state = Adapter.Item.LoadingState.LOADING;
 
-        public Item(String url, String id) {
-            this.url = url;
-            this.id = id;
-            load(url);
-        }
-
-        public void setOnLoadListener(OnLoadListener listener) {
+        private void setOnLoadListener(Adapter.Item.OnLoadListener listener) {
             switch (state) {
                 case LOADING:
                     this.listener = listener;
@@ -181,38 +181,32 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
             }
         }
 
-        private void load(String imgUrl) {
+        public Item() {
+            startLoading();
+        }
+
+        private void setState(Adapter.Item.LoadingState state) {
+            this.state = state;
+            if (listener != null && (state == Adapter.Item.LoadingState.ERROR || state == Adapter.Item.LoadingState.SUCCESS))
+                mainThread.post(() -> listener.onDone(bitmap));
+        }
+
+        private void startLoading() {
             CompletableFuture.runAsync(() -> {
-                try {
-                    HttpURLConnection connection = (HttpURLConnection) new URL(imgUrl).openConnection();
-                    bitmap = BitmapFactory.decodeStream(connection.getInputStream());
-                    setState(LoadingState.SUCCESS);
-                } catch (IOException exception) {
-                    setState(LoadingState.ERROR);
-                }
+                bitmap = load();
+                setState(bitmap == null ? LoadingState.ERROR : LoadingState.SUCCESS);
             });
         }
+
+        @Nullable
+        protected abstract Bitmap load();
 
         public Bitmap getBitmap() {
             return bitmap;
         }
 
-        public String getId() {
-            return id;
-        }
-
-        public String getUrl() {
-            return url;
-        }
-
-        public LoadingState getState() {
+        public Adapter.Item.LoadingState getState() {
             return state;
-        }
-
-        public void setState(LoadingState state) {
-            this.state = state;
-            if (listener != null && (state == LoadingState.ERROR || state == LoadingState.SUCCESS))
-                mainThread.post(() -> listener.onDone(bitmap));
         }
 
         public interface OnLoadListener {
