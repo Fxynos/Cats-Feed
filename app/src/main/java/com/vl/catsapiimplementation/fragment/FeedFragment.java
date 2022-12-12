@@ -1,7 +1,10 @@
 package com.vl.catsapiimplementation.fragment;
 
+import android.animation.Animator;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.drawable.AnimatedVectorDrawable;
+import android.graphics.drawable.AnimationDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -9,6 +12,7 @@ import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -47,6 +51,8 @@ public class FeedFragment extends Fragment implements Adapter.OnClickListener {
 
     private RecyclerView list;
     private Adapter adapter;
+    private ImageView loadingIcon;
+    private AnimatedVectorDrawable loadingAnimation = null;
     volatile private boolean loading = true;
 
     @Override
@@ -66,6 +72,8 @@ public class FeedFragment extends Fragment implements Adapter.OnClickListener {
     public void asyncUpdate(int count) {
         assert getContext() != null;
         loading = true;
+        loadingAnimation.start();
+        loadingIcon.setVisibility(View.VISIBLE);
         final int s = adapter.getItemCount();
         executor.execute(() -> {
             final Collection<FeedItem> items;
@@ -80,6 +88,8 @@ public class FeedFragment extends Fragment implements Adapter.OnClickListener {
                 adapter.getItems().addAll(items);
                 adapter.notifyItemRangeInserted(s, items.size());
                 loading = false;
+                loadingAnimation.stop();
+                loadingIcon.setVisibility(View.GONE);
             });
         });
     }
@@ -138,6 +148,9 @@ public class FeedFragment extends Fragment implements Adapter.OnClickListener {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
          executor = Executors.newSingleThreadExecutor();
         final View root = inflater.inflate(R.layout.fragment_feed, container, false);
+        loadingIcon = root.findViewById(R.id.loadingIcon);
+        loadingIcon.setBackgroundResource(R.drawable.loading_animated);
+        loadingAnimation = (AnimatedVectorDrawable) loadingIcon.getBackground();
         list = root.findViewById(R.id.list);
         adapter = new Adapter(getContext(), new ArrayList<>());
         list.setAdapter(adapter);
