@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <objectAnimator android:valueType="pathType"
+        android:propertyName="pathData"
+        android:duration="300"
+        android:startOffset="150"
+        android:valueFrom="M5,2.5 c5,0,5,5,0,5 -5,0,-5,-5,0,-5z"
+        android:valueTo="M5,1 c3.5,0,3.5,8,0,8 -3.5,0,-3.5,-8,0,-8z"
+        android:repeatCount="infinite"
+        android:repeatMode="reverse"/>
+    <!--android:valueTo="M5,0 c2.5,0,2.5,10,0,10 -2.5,0,-2.5,-10,0,-10z"-->
+</set>
