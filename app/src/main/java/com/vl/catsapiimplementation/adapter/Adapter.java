@@ -75,7 +75,7 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
         items.get(position).setOnLoadListener((bitmap) -> {
             if (holder.getAdapterPosition() == position) {
                 if (bitmap == null)
-                    holder.img.setImageResource(R.drawable.ic_baseline_signal_wifi_off_24); // TODO
+                    holder.img.setImageResource(R.drawable.placeholder_image);
                 else
                     holder.img.setImageBitmap(bitmap);
                 holder.shimmer.stopShimmer();
@@ -110,7 +110,7 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
         @Override
         public void onClick(View view) {
             if (view.getId() == R.id.card) {
-                if (isAnimationAvailable() && icon != null)
+                if (isAnimationAvailable() && items.get(getAdapterPosition()).bitmap != null)
                     startAnimationAppear();
             } else if (clickListener != null)
                 clickListener.onClick(view, getAdapterPosition());
