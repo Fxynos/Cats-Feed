@@ -1,10 +1,8 @@
 package com.vl.catsapiimplementation.fragment;
 
-import android.animation.Animator;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.AnimatedVectorDrawable;
-import android.graphics.drawable.AnimationDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,13 +16,14 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.vl.catsapiimplementation.adapter.Adapter;
 import com.vl.catsapiimplementation.R;
-import com.vl.catsapiimplementation.activtiy.DemoActivity;
+import com.vl.catsapiimplementation.activity.DemoActivity;
 import com.vl.catsapiimplementation.adapter.FeedItem;
 
 import java.io.BufferedReader;
@@ -79,7 +78,7 @@ public class FeedFragment extends Fragment implements Adapter.OnClickListener {
             final Collection<FeedItem> items;
             try {
                 items = load(count);
-            } catch (IOException exception) {
+            } catch (IOException exception) { // TODO more attempts
                 exception.printStackTrace();
                 mainThreadLooper.post(() -> Toast.makeText(getContext(), String.format("Exception: %s", exception.getMessage()), Toast.LENGTH_LONG).show());
                 return;
@@ -134,6 +133,10 @@ public class FeedFragment extends Fragment implements Adapter.OnClickListener {
         return new File(DemoActivity.getDownloads(), item.getId().concat(".jpg")).exists();
     }
 
+    private boolean isTimeToUpdate() {
+        return !loading && list.computeVerticalScrollExtent() * 4 + list.computeVerticalScrollOffset() >= list.computeVerticalScrollRange();
+    }
+
     @Override
     public void onClick(View view, int position) {
         final FeedItem item = (FeedItem) adapter.getItems().get(position);
@@ -141,6 +144,12 @@ public class FeedFragment extends Fragment implements Adapter.OnClickListener {
             if (!isPictureDownloaded(item))
                 save(item.getBitmap(), item.getId());
             else Toast.makeText(getContext(), "Saved earlier", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+
     }
 
     @Nullable
@@ -152,11 +161,11 @@ public class FeedFragment extends Fragment implements Adapter.OnClickListener {
         loadingIcon.setBackgroundResource(R.drawable.loading_animated);
         loadingAnimation = (AnimatedVectorDrawable) loadingIcon.getBackground();
         list = root.findViewById(R.id.list);
-        adapter = new Adapter(getContext(), new ArrayList<>());
+        adapter = new Adapter(getContext(), new ViewModelProvider(getActivity()).get(FeedModel.class).getFeedItems());
         list.setAdapter(adapter);
-        asyncUpdate(CHUNK);
+        if (adapter.getItemCount() == 0) asyncUpdate(CHUNK);
         list.setOnScrollChangeListener((View view, int i, int i1, int i2, int i3) -> {
-            if (!loading && list.computeVerticalScrollExtent() * 4 + list.computeVerticalScrollOffset() >= list.computeVerticalScrollRange())
+            if (isTimeToUpdate())
                 asyncUpdate(CHUNK);
         });
         adapter.setOnClickListener(this);

@@ -16,9 +16,8 @@
         android:theme="@style/Theme.CatsAPIImplementation"
         tools:targetApi="31" >
 
-        <activity android:name=".activtiy.DemoActivity"
-            android:exported="true"
-            android:screenOrientation="portrait">
+        <activity android:name=".activity.DemoActivity"
+            android:exported="true">
 
             <intent-filter>
                 <category android:name="android.intent.category.LAUNCHER"/>
