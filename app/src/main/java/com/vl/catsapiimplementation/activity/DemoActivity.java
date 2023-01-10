@@ -1,5 +1,6 @@
 package com.vl.catsapiimplementation.activity;
 
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Environment;
 import android.widget.Toast;
@@ -9,6 +10,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.vl.catsapiimplementation.R;
@@ -20,6 +24,7 @@ import java.util.Map;
 
 public class DemoActivity extends AppCompatActivity {
     final private static String BUNDLE_PAGE_KEY = "page";
+    final private static int LANDSCAPE_GRID_COLUMNS = 3;
     final private static File DOWNLOADS = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "Cats Feed");
     final private static Map<Integer, Fragment> fragments = Map.ofEntries(
             Map.entry(R.id.feed, new FeedFragment()),
@@ -54,5 +59,11 @@ public class DemoActivity extends AppCompatActivity {
 
     public static File getDownloads() {
         return DOWNLOADS;
+    }
+
+    public RecyclerView.LayoutManager obtainRecyclerLayoutManagerForSpecificOrientation() {
+        return getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ?
+                new GridLayoutManager(this, LANDSCAPE_GRID_COLUMNS) :
+                new LinearLayoutManager(this);
     }
 }

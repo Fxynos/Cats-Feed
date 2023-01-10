@@ -46,7 +46,7 @@ public class FeedFragment extends Fragment implements Adapter.OnClickListener {
     final private static Gson g = new Gson();
     final private static String
             url = "https://api.thecatapi.com/v1/images/search";
-    final private static int CHUNK = 10;
+    final private static int CHUNK = 10; // number of images whose url will be get with one request
 
     private RecyclerView list;
     private Adapter adapter;
@@ -155,12 +155,14 @@ public class FeedFragment extends Fragment implements Adapter.OnClickListener {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-         executor = Executors.newSingleThreadExecutor();
+        assert(getActivity() != null);
+        executor = Executors.newSingleThreadExecutor();
         final View root = inflater.inflate(R.layout.fragment_feed, container, false);
         loadingIcon = root.findViewById(R.id.loadingIcon);
         loadingIcon.setBackgroundResource(R.drawable.loading_animated);
         loadingAnimation = (AnimatedVectorDrawable) loadingIcon.getBackground();
         list = root.findViewById(R.id.list);
+        list.setLayoutManager(((DemoActivity) getActivity()).obtainRecyclerLayoutManagerForSpecificOrientation());
         adapter = new Adapter(getContext(), new ViewModelProvider(getActivity()).get(FeedModel.class).getFeedItems());
         list.setAdapter(adapter);
         if (adapter.getItemCount() == 0) asyncUpdate(CHUNK);

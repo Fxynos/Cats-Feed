@@ -30,7 +30,9 @@ import java.util.concurrent.CompletableFuture;
 public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
     final static private Handler mainThread = new Handler(Looper.getMainLooper());
 
-    final static private int ANIMATION_DURATION = 250;
+    final static private int
+            ANIMATION_DURATION = 250,
+            LIMIT = 20; // there will be always about <LIMIT * 2> images in memory, other are cleared
     final static private Interpolator ANIMATION_INTERPOLATOR = new LinearInterpolator();
 
     final private ArrayList<Adapter.Item> items;
@@ -82,6 +84,10 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
                 holder.shimmer.hideShimmer();
             }
         });
+        if (position >= LIMIT)
+            items.get(position - LIMIT).clear();
+        if (position + LIMIT < items.size())
+            items.get(position + LIMIT).clear();
     }
 
     @Override
@@ -160,12 +166,14 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
         public enum LoadingState {
             LOADING,
             SUCCESS,
-            ERROR
+            ERROR,
+            CLEANED
         }
 
-        private Bitmap bitmap = null;
-        private Adapter.Item.OnLoadListener listener = null;
-        private Adapter.Item.LoadingState state = Adapter.Item.LoadingState.LOADING;
+        volatile private Bitmap bitmap = null;
+        volatile private Adapter.Item.OnLoadListener listener = null;
+        volatile private Adapter.Item.LoadingState state = Adapter.Item.LoadingState.LOADING;
+        volatile CompletableFuture<?> loadingProcess = null;
 
         private void setOnLoadListener(Adapter.Item.OnLoadListener listener) {
             switch (state) {
@@ -177,6 +185,11 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
                     break;
                 case ERROR:
                     listener.onDone(null);
+                    break;
+                case CLEANED:
+                    state = LoadingState.LOADING;
+                    this.listener = listener;
+                    startLoading();
                     break;
             }
         }
@@ -192,10 +205,19 @@ public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
         }
 
         private void startLoading() {
-            CompletableFuture.runAsync(() -> {
+            loadingProcess = CompletableFuture.runAsync(() -> {
                 bitmap = load();
                 setState(bitmap == null ? LoadingState.ERROR : LoadingState.SUCCESS);
             });
+        }
+
+        private void clear() {
+            if (state == LoadingState.CLEANED)
+                return;
+            if (state == LoadingState.LOADING)
+                loadingProcess.cancel(true);
+            bitmap = null;
+            state = LoadingState.CLEANED;
         }
 
         @Nullable
