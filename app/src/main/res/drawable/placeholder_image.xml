@@ -4,12 +4,12 @@
         android:width="500dp"
         android:height="500dp">
         <shape android:shape="rectangle">
-            <solid android:color="@color/gray"/>
+            <solid android:color="?attr/colorPrimaryVariant"/>
         </shape>
     </item>
     <item
         android:width="200dp"
         android:height="200dp"
         android:gravity="center"
-        android:drawable="@drawable/ic_baseline_signal_wifi_off_24"/>
+        android:drawable="@drawable/ic_wifi_off"/>
 </layer-list>

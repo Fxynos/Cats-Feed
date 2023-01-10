@@ -25,13 +25,16 @@ public class DownloadsFragment extends Fragment implements Adapter.OnClickListen
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState) {
+        assert(getActivity() != null);
         final View root = inflater.inflate(R.layout.fragment_downloads, parent, false);
         final File[] downloads = DemoActivity.getDownloads().listFiles();
         adapter = new Adapter(
                 getContext(),
                 new ArrayList<>(downloads == null ? List.of() : Arrays.stream(downloads).map(DownloadsItem::new).collect(Collectors.toList()))
         );
-        ((RecyclerView) root.findViewById(R.id.downloadsList)).setAdapter(adapter);
+        final RecyclerView list = root.findViewById(R.id.downloadsList);
+        list.setLayoutManager(((DemoActivity) getActivity()).obtainRecyclerLayoutManagerForSpecificOrientation());
+        list.setAdapter(adapter);
         adapter.notifyItemRangeInserted(0, adapter.getItemCount());
         adapter.setOnClickListener(this);
         adapter.setButtonIconResource(R.drawable.ic_delete);

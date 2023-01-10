@@ -155,12 +155,14 @@ public class FeedFragment extends Fragment implements Adapter.OnClickListener {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-         executor = Executors.newSingleThreadExecutor();
+        assert(getActivity() != null);
+        executor = Executors.newSingleThreadExecutor();
         final View root = inflater.inflate(R.layout.fragment_feed, container, false);
         loadingIcon = root.findViewById(R.id.loadingIcon);
         loadingIcon.setBackgroundResource(R.drawable.loading_animated);
         loadingAnimation = (AnimatedVectorDrawable) loadingIcon.getBackground();
         list = root.findViewById(R.id.list);
+        list.setLayoutManager(((DemoActivity) getActivity()).obtainRecyclerLayoutManagerForSpecificOrientation());
         adapter = new Adapter(getContext(), new ViewModelProvider(getActivity()).get(FeedModel.class).getFeedItems());
         list.setAdapter(adapter);
         if (adapter.getItemCount() == 0) asyncUpdate(CHUNK);
