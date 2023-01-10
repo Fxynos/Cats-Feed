@@ -10,7 +10,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.vl.catsapiimplementation.R;
-import com.vl.catsapiimplementation.activtiy.DemoActivity;
+import com.vl.catsapiimplementation.activity.DemoActivity;
 import com.vl.catsapiimplementation.adapter.Adapter;
 import com.vl.catsapiimplementation.adapter.DownloadsItem;
 
